@@ -4465,6 +4465,9 @@ async function main() {
   let failedTargets = 0;
   const emptyTargets = [];
   const unverifiedZeroTargets = [];
+  // Per-target job counts before any filter, for the receipt's `sources` list
+  // (source-status.mjs turns it into data/source-status.tsv).
+  const foundByTarget = new Map();
 
   // Arm the failure-path row (#2643) now that the sweep is about to start and
   // every counter it reads is in scope. new_added is hardcoded 0 on a failed
@@ -4559,6 +4562,7 @@ async function main() {
         throw new Error(`${provider.id}: fetch() did not return an array`);
       }
       totalFound += jobs.length;
+      foundByTarget.set(company._targetId, jobs.length);
       if (!company._isBoard && jobs.length === 0) {
         if (emptyTargetStatus(observation) === 'empty') emptyTargets.push(company.name);
         else unverifiedZeroTargets.push(company.name);
@@ -5288,6 +5292,21 @@ async function main() {
       added_urls: verifiedOffers.map(offer => offer.url),
       errors: errors.map(({ company, error }) => ({ company, error })),
       unverified_zero: unverifiedZeroTargets,
+      // Additive: one row per target the scan tried, and every enabled entry
+      // it could not scan (no zero-token provider). A target is "scanned" only
+      // when its board answered; errors keep their classified kind.
+      sources: targets.map((t, i) => ({
+        name: t.name,
+        provider: t._provider?.id ?? null,
+        board: Boolean(t._isBoard),
+        status: healthRecords[i]?.status ?? null,
+        found: foundByTarget.has(t._targetId) ? foundByTarget.get(t._targetId) : null,
+        added: verifiedOffers.filter((o) => o.company === t.name).length,
+      })),
+      not_scanned: [
+        ...agentHandoff.map((h) => ({ name: h.company, reason: 'no_provider', method: h.method })),
+        ...resolveErrors.map((e) => ({ name: e.company, reason: 'config_error', error: e.error })),
+      ],
       dry_run: dryRun,
     }, errors.length > 0 ? 2 : 0);
   }

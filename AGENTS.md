@@ -118,6 +118,9 @@ AI-powered, CLI-agnostic job search automation: pipeline tracking, offer evaluat
 | `data/pipeline.md` | Inbox of pending URLs |
 | `data/scan-history.tsv` | Scanner dedup history |
 | `data/scan-runs.tsv` | Per-run scan counters (appended by `scan.mjs`, read by `stats.mjs`) |
+| `leads.mjs` / `data/leads.tsv` | Discovery layer separate from verification: imports scanner results (`sync`) and external leads from job boards, recruiters and search results (`add`), keeps each with a verification status instead of dropping it, re-checks them (`verify`: ATS API, then a robots.txt-respecting page check; LinkedIn is never checked automatically), scores each against `cv.md` with the zero-token quick match in `lib/lead-match.mjs` (`match`), and copies a lead into `data/pipeline.md` only on `promote`. A quick match is a pre-score, never an evaluation |
+| `source-status.mjs` / `data/source-status.tsv` | Per-source coverage from a `scan.mjs --json` receipt: a source is scanned only when its board answered; no-provider entries are `not_scanned`, and job boards that may not be scraped are `search_only` |
+| `probe-boards.mjs` | Detects the ATS behind each web-search-only careers page (robots.txt respected) into `data/board-probes.tsv`; suggestion only |
 | `data/follow-ups.md` | Follow-up history tracker |
 | `data/blacklist.md` | Do-not-apply companies (user layer, opt-in, never auto-populated; respected by `scan.mjs`, `discover-new-companies.mjs`/`discover-ats.mjs`, and the `auto-pipeline`/`oferta`/`apply` gates) |
 | `data/salary-observations.tsv` | Append-only salary observation log (user layer) |
