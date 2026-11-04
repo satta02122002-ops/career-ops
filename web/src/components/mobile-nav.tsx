@@ -12,6 +12,7 @@ import { UsageMeter } from "@/components/usage-meter";
 import { instrumentSerif } from "@/lib/fonts";
 import { visibleNavItems, isActivePath } from "@/lib/nav-items";
 import { useJobs } from "@/components/jobs/job-store";
+import { SignOutButton } from "@/components/sign-out-button";
 
 // Mobile navigation (< md): a glass top bar + a right-side slide-over drawer that
 // mirrors the desktop sidebar (nav + workers + usage + theme). Premium details:
@@ -36,7 +37,7 @@ const STYLE = `
 @media(prefers-reduced-motion:reduce){.co-mdrawer,.co-mscrim{transition:none}.co-pulse{animation:none}}
 `;
 
-export function MobileNav({ followupsEnabled }: { followupsEnabled: boolean }) {
+export function MobileNav({ followupsEnabled, authEnabled = false }: { followupsEnabled: boolean; authEnabled?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
@@ -201,6 +202,7 @@ export function MobileNav({ followupsEnabled }: { followupsEnabled: boolean }) {
             </div>
             <ThemeToggle showLabel className="bg-surface-hover/40" />
           </div>
+          {authEnabled && <SignOutButton className="px-1" />}
         </div>
       </aside>
     </>

@@ -18,9 +18,21 @@ import { WorkerPills } from "@/components/jobs/worker-pills";
 import { UsageMeter } from "@/components/usage-meter";
 import { instrumentSerif } from "@/lib/fonts";
 import { visibleNavItems, isActivePath } from "@/lib/nav-items";
+import { SignOutButton } from "@/components/sign-out-button";
 
-export function AppShell({ children, followupsEnabled }: { children: React.ReactNode; followupsEnabled: boolean }) {
+export function AppShell({
+  children,
+  followupsEnabled,
+  authEnabled = false,
+}: {
+  children: React.ReactNode;
+  followupsEnabled: boolean;
+  authEnabled?: boolean;
+}) {
   const pathname = usePathname();
+  // The sign-in screen renders bare: the providers below poll /api on mount,
+  // and before sign-in every one of those calls would answer 401.
+  if (pathname === "/login") return <>{children}</>;
   return (
     <JobsProvider>
       <PipelineProvider>
@@ -32,7 +44,7 @@ export function AppShell({ children, followupsEnabled }: { children: React.React
       >
         Skip to content
       </a>
-      <MobileNav followupsEnabled={followupsEnabled} />
+      <MobileNav followupsEnabled={followupsEnabled} authEnabled={authEnabled} />
       <div className="flex min-h-screen">
         <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-border bg-surface/30 p-4 md:flex">
           <Link href="/" className="mb-8 flex items-center gap-2.5 px-1">
@@ -77,6 +89,7 @@ export function AppShell({ children, followupsEnabled }: { children: React.React
                 <span className="font-mono text-[10px] text-faint">THEME</span>
               </div>
               <ThemeToggle showLabel />
+              {authEnabled && <SignOutButton />}
               <div className="px-1">
                 <span className={`${instrumentSerif.className} text-sm text-faint`}>local-first · v0</span>
               </div>

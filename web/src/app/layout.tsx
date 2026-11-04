@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { RouteProgressHost } from "@/components/route-progress-host";
 import { ThemeProvider } from "@/components/theme-provider";
 import { readFollowupsEnabled } from "@/lib/followups-server";
+import { readAuthConfig } from "@/lib/web-auth.mjs";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('career-ops:the
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection();
   const followupsEnabled = readFollowupsEnabled();
+  const authEnabled = readAuthConfig(process.env).enabled;
   return (
     <html
       lang="en"
@@ -42,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <RouteProgressHost />
         <ThemeProvider>
-          <AppShell followupsEnabled={followupsEnabled}>{children}</AppShell>
+          <AppShell followupsEnabled={followupsEnabled} authEnabled={authEnabled}>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

@@ -5,6 +5,7 @@ import {
   parseAllowedHosts,
   parseAllowedOrigins,
 } from "@/lib/origin-guard.mjs";
+import { AUTH_COOKIE, decideAuth, readAuthConfig } from "@/lib/web-auth.mjs";
 
 // Single choke point over everything the dashboard serves. Every request is
 // gated on the same-origin + loopback guard before it can reach a route handler
@@ -20,7 +21,12 @@ import {
 // was. It is what a local companion client needs: a browser extension calls
 // from a chrome-extension:// origin, which Fetch Metadata always reports as
 // "cross-site", so every one of its requests is refused otherwise.
-export function proxy(req: NextRequest) {
+//
+// Then, only when CAREER_OPS_WEB_PASSWORD_HASH is set, the optional login gate
+// (web-auth.mjs): every page and /api route outside the small public set needs a
+// valid signed session cookie. Pages without one redirect to /login, /api answers
+// 401. Unset, the gate is a no-op and the dashboard behaves exactly as before.
+export async function proxy(req: NextRequest) {
   const decision = checkRequest({
     secFetchSite: req.headers.get("sec-fetch-site"),
     origin: req.headers.get("origin"),
@@ -30,6 +36,20 @@ export function proxy(req: NextRequest) {
   });
   if (!decision.ok) {
     return NextResponse.json({ error: decision.reason }, { status: decision.status });
+  }
+  const auth = await decideAuth({
+    config: readAuthConfig(process.env),
+    pathname: req.nextUrl.pathname,
+    search: req.nextUrl.search,
+    token: req.cookies.get(AUTH_COOKIE)?.value ?? null,
+  });
+  if (auth.action === "deny") {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+  if (auth.action === "redirect") {
+    // Relative to the request URL, so the redirect stays on whatever host the
+    // browser used (localhost, or the tunnel's public hostname).
+    return NextResponse.redirect(new URL(auth.location, req.url), 303);
   }
   return NextResponse.next();
 }
